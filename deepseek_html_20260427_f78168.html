@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>CloudStream - Premium Media Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --dark: #0f172a;
+            --darker: #020617;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--light);
+        }
+
+        /* Header */
+        .header {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            background: none;
+            -webkit-text-fill-color: initial;
+        }
+
+        .back-btn {
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: var(--light);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateX(-5px);
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            width: 100%;
+        }
+
+        /* Player Wrapper */
+        .player-wrapper {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 24px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .media-container {
+            background: #000;
+            position: relative;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            outline: none;
+        }
+
+        #audioElement {
+            width: 100%;
+            padding: 40px;
+        }
+
+        #imageElement {
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            border-radius: 16px;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(99, 102, 241, 0.3);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Controls */
+        .controls {
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.8));
+            padding: 20px 24px;
+        }
+
+        .progress-section {
+            margin-bottom: 16px;
+        }
+
+        .progress-bar-container {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            height: 5px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            height: 100%;
+            border-radius: 4px;
+            width: 0%;
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .progress-bar-container:hover .progress-bar::after {
+            opacity: 1;
+        }
+
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .button-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            padding: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: var(--light);
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            width: 48px;
+            height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: var(--primary);
+            transform: scale(1.05);
+        }
+
+        .control-btn.primary {
+            background: var(--primary);
+            width: 56px;
+            height: 56px;
+            font-size: 1.4rem;
+        }
+
+        .control-btn.primary:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 40px;
+        }
+
+        .volume-slider {
+            width: 100px;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* File Info Card */
+        .info-card {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 24px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-label {
+            color: var(--gray);
+            font-size: 0.85rem;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: var(--light);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-video { background: rgba(99, 102, 241, 0.2); color: var(--primary); }
+        .badge-audio { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .badge-image { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+
+        /* Shortcuts Help */
+        .shortcuts-help {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 16px;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        .shortcuts-help span {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 8px;
+            margin: 0 4px;
+            font-family: monospace;
+        }
+
+        /* Error Message */
+        .error-container {
+            text-align: center;
+            padding: 60px 24px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 24px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .error-title {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+
+        .error-message {
+            color: var(--gray);
+            margin-bottom: 24px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 16px;
+            }
+            
+            .button-group {
+                gap: 12px;
+            }
+            
+            .control-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+            
+            .control-btn.primary {
+                width: 48px;
+                height: 48px;
+            }
+            
+            .volume-control {
+                display: none;
+            }
+            
+            .shortcuts-help {
+                display: none;
+            }
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🎬</span>
+                <span>CloudStream</span>
+            </div>
+            <a href="/" class="back-btn">← Back to Home</a>
+        </div>
+    </div>
+
+    <div class="container fade-in">
+        <div class="player-wrapper">
+            <div class="media-container" id="mediaContainer">
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="spinner"></div>
+                    <div>Loading media...</div>
+                </div>
+                <div id="mediaElement"></div>
+            </div>
+
+            <div class="controls" id="controls" style="display: none;">
+                <div class="progress-section">
+                    <div class="progress-bar-container" id="progressBarContainer">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="time-info">
+                        <span id="currentTime">00:00</span>
+                        <span id="duration">00:00</span>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="control-btn" id="rewindBtn" title="Rewind 10s">⏪</button>
+                    <button class="control-btn primary" id="playPauseBtn">▶️</button>
+                    <button class="control-btn" id="forwardBtn" title="Forward 10s">⏩</button>
+                    
+                    <div class="volume-control">
+                        <button class="control-btn" id="muteBtn" style="width: auto; border-radius: 40px; padding: 8px 16px;">🔊</button>
+                        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="100">
+                    </div>
+                    
+                    <button class="control-btn" id="fullscreenBtn" title="Fullscreen (F)">⛶</button>
+                    <button class="control-btn" id="downloadBtn" title="Download">⬇️</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-card" id="infoCard" style="display: none;">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Media Type</span>
+                    <span class="info-value" id="mediaTypeBadge">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status</span>
+                    <span class="info-value" id="playbackStatus">Ready</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Quality</span>
+                    <span class="info-value" id="quality">HD</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Link Expiry</span>
+                    <span class="info-value">28 days</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="shortcuts-help">
+            ⌨️ Keyboard Shortcuts: 
+            <span>Space</span> Play/Pause 
+            <span>◀</span> Rewind 10s 
+            <span>▶</span> Forward 10s 
+            <span>▲</span> Volume Up 
+            <span>▼</span> Volume Down 
+            <span>F</span> Fullscreen 
+            <span>M</span> Mute
+        </div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const mediaType = '{{ media_type }}';
+        const mediaUrl = '{{ media_url }}';
+        
+        // DOM Elements
+        const mediaContainer = document.getElementById('mediaContainer');
+        const mediaElementDiv = document.getElementById('mediaElement');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const controls = document.getElementById('controls');
+        const infoCard = document.getElementById('infoCard');
+        
+        // Control buttons
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const rewindBtn = document.getElementById('rewindBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        const muteBtn = document.getElementById('muteBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeSpan = document.getElementById('currentTime');
+        const durationSpan = document.getElementById('duration');
+        
+        // Info elements
+        const mediaTypeBadge = document.getElementById('mediaTypeBadge');
+        const playbackStatusSpan = document.getElementById('playbackStatus');
+        
+        let mediaElement = null;
+        let isPlaying = false;
+        let isSeeking = false;
+        
+        // Initialize media player
+        function initPlayer() {
+            if (!mediaUrl) {
+                showError('No media URL provided');
+                return;
+            }
+            
+            switch(mediaType) {
+                case 'video':
+                    createVideoPlayer();
+                    break;
+                case 'audio':
+                    createAudioPlayer();
+                    break;
+                case 'image':
+                    createImagePlayer();
+                    break;
+                default:
+                    showError('Unsupported media type: ' + mediaType);
+            }
+        }
+        
+        function createVideoPlayer() {
+            mediaElement = document.createElement('video');
+            mediaElement.id = 'videoElement';
+            mediaElement.controls = false;
+            mediaElement.preload = 'metadata';
+            mediaElement.src = mediaUrl;
+            
+            mediaElementDiv.appendChild(mediaElement);
+            setupMediaEvents();
+        }
+        
+        function createAudioPlayer() {
+            mediaElement = document.createElement('audio');
+            mediaElement.id = 'audioElement';
+            mediaElement.controls = false;
+            mediaElement.preload = 'metadata';
+            mediaElement.src = mediaUrl;
+            
+            mediaElementDiv.appendChild(mediaElement);
+            setupMediaEvents();
+            
+            // Style for audio
+            mediaElement.style.width = '100%';
+        }
+        
+        function createImagePlayer() {
+            loadingOverlay.style.display = 'flex';
+            mediaElement = document.createElement('img');
+            mediaElement.id = 'imageElement';
+            mediaElement.src = mediaUrl;
+            mediaElement.alt = 'Displayed Image';
+            
+            mediaElement.onload = () => {
+                loadingOverlay.style.display = 'none';
+                controls.style.display = 'none'; // No controls for images
+                infoCard.style.display = 'block';
+                updateMediaTypeBadge();
+            };
+            
+            mediaElement.onerror = () => {
+                showError('Failed to load image. The file may be corrupted or the link may have expired.');
+            };
+            
+            mediaElementDiv.appendChild(mediaElement);
+            updateMediaTypeBadge();
+        }
+        
+        function setupMediaEvents() {
+            mediaElement.addEventListener('loadedmetadata', () => {
+                loadingOverlay.style.display = 'none';
+                controls.style.display = 'block';
+                infoCard.style.display = 'block';
+                durationSpan.textContent = formatTime(mediaElement.duration);
+                updateMediaTypeBadge();
+                playbackStatusSpan.textContent = 'Ready';
+            });
+            
+            mediaElement.addEventListener('timeupdate', updateProgress);
+            mediaElement.addEventListener('ended', onMediaEnded);
+            mediaElement.addEventListener('play', () => {
+                isPlaying = true;
+                playPauseBtn.innerHTML = '⏸️';
+                playbackStatusSpan.textContent = 'Playing';
+            });
+            mediaElement.addEventListener('pause', () => {
+                isPlaying = false;
+                playPauseBtn.innerHTML = '▶️';
+                playbackStatusSpan.textContent = 'Paused';
+            });
+            mediaElement.addEventListener('waiting', () => {
+                playbackStatusSpan.textContent = 'Buffering...';
+            });
+            mediaElement.addEventListener('canplay', () => {
+                playbackStatusSpan.textContent = isPlaying ? 'Playing' : 'Paused';
+            });
+            mediaElement.addEventListener('error', (e) => {
+                showError('Error playing media. The file may be corrupted or unsupported.');
+            });
+            
+            // Set initial volume
+            mediaElement.volume = volumeSlider.value / 100;
+            
+            // Try to auto-play
+            setTimeout(() => {
+                mediaElement.play().catch(e => console.log('Auto-play prevented'));
+            }, 1000);
+        }
+        
+        function updateProgress() {
+            if (!isSeeking && mediaElement && mediaElement.duration) {
+                const percent = (mediaElement.currentTime / mediaElement.duration) * 100;
+                progressBar.style.width = `${percent}%`;
+                currentTimeSpan.textContent = formatTime(mediaElement.currentTime);
+            }
+        }
+        
+        function onMediaEnded() {
+            isPlaying = false;
+            playPauseBtn.innerHTML = '▶️';
+            progressBar.style.width = '0%';
+            currentTimeSpan.textContent = '00:00';
+            playbackStatusSpan.textContent = 'Ended';
+        }
+        
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function updateMediaTypeBadge() {
+            const typeMap = {
+                'video': '<span class="badge badge-video">🎬 Video</span>',
+                'audio': '<span class="badge badge-audio">🎵 Audio</span>',
+                'image': '<span class="badge badge-image">🖼️ Image</span>'
+            };
+            mediaTypeBadge.innerHTML = typeMap[mediaType] || '<span class="badge">📄 File</span>';
+        }
+        
+        function showError(message) {
+            loadingOverlay.style.display = 'none';
+            mediaContainer.innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-title">Playback Error</div>
+                    <div class="error-message">${message}</div>
+                    <a href="/" class="back-btn" style="background: var(--primary);">← Go to Home</a>
+                </div>
+            `;
+        }
+        
+        // Event listeners for controls
+        playPauseBtn.addEventListener('click', () => {
+            if (!mediaElement) return;
+            if (isPlaying) {
+                mediaElement.pause();
+            } else {
+                mediaElement.play();
+            }
+        });
+        
+        rewindBtn.addEventListener('click', () => {
+            if (mediaElement) {
+                mediaElement.currentTime = Math.max(0, mediaElement.currentTime - 10);
+            }
+        });
+        
+        forwardBtn.addEventListener('click', () => {
+            if (mediaElement) {
+                mediaElement.currentTime = Math.min(mediaElement.duration, mediaElement.currentTime + 10);
+            }
+        });
+        
+        muteBtn.addEventListener('click', () => {
+            if (!mediaElement) return;
+            mediaElement.muted = !mediaElement.muted;
+            muteBtn.innerHTML = mediaElement.muted ? '🔇' : '🔊';
+            volumeSlider.value = mediaElement.muted ? 0 : mediaElement.volume * 100;
+        });
+        
+        volumeSlider.addEventListener('input', () => {
+            if (!mediaElement) return;
+            mediaElement.volume = volumeSlider.value / 100;
+            mediaElement.muted = volumeSlider.value == 0;
+            muteBtn.innerHTML = volumeSlider.value == 0 ? '🔇' : '🔊';
+        });
+        
+        fullscreenBtn.addEventListener('click', () => {
+            if (!mediaElement) return;
+            if (mediaElement.requestFullscreen) {
+                mediaElement.requestFullscreen();
+            } else if (mediaElement.webkitRequestFullscreen) {
+                mediaElement.webkitRequestFullscreen();
+            }
+        });
+        
+        downloadBtn.addEventListener('click', () => {
+            const a = document.createElement('a');
+            a.href = mediaUrl;
+            a.download = mediaUrl.split('/').pop() || 'download';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+        
+        progressBarContainer.addEventListener('click', (e) => {
+            if (!mediaElement || !mediaElement.duration) return;
+            const rect = progressBarContainer.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            mediaElement.currentTime = percent * mediaElement.duration;
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (!mediaElement) return;
+            
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    playPauseBtn.click();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    rewindBtn.click();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    forwardBtn.click();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    volumeSlider.value = Math.min(100, parseInt(volumeSlider.value) + 10);
+                    volumeSlider.dispatchEvent(new Event('input'));
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    volumeSlider.value = Math.max(0, parseInt(volumeSlider.value) - 10);
+                    volumeSlider.dispatchEvent(new Event('input'));
+                    break;
+                case 'KeyF':
+                    e.preventDefault();
+                    fullscreenBtn.click();
+                    break;
+                case 'KeyM':
+                    e.preventDefault();
+                    muteBtn.click();
+                    break;
+            }
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initPlayer);
+    </script>
+</body>
+</html>
